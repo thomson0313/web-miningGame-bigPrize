@@ -37,7 +37,7 @@ body {
     display: grid;
     grid-template-columns: repeat(6, 60px);
     grid-template-rows: repeat(6, 60px);
-    gap: 2px; /* Adds space between blocks */
+    gap: 4px; /* Adds space between blocks */
     background-image: url('images/image2.png'); /* Infinite background image */
     background-size: 100% auto;
     background-position-y: 0;
@@ -258,6 +258,51 @@ body {
     }
 }
 
+
+
+
+#mine-grid {
+    transition: background-position 2.5s ease-in-out; /* Slow down the background movement */
+}
+@keyframes fadeOut {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.fade-out {
+    animation: fadeOut 1s forwards;
+}
+
+@keyframes glow {
+    0% { box-shadow: 0 0 10px rgba(255, 157, 0, 0.5); }
+    100% { box-shadow: 0 0 20px rgb(255, 140, 0); }
+}
+
+.glow {
+    animation: glow 1s ease-in-out infinite alternate;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+}
+
 #mine-grid.shake-animation {
     animation: shake 0.6s ease-in-out;
+}
+@keyframes particleFade {
+    0% { transform: translateY(0) scale(1); opacity: 1; }
+    100% { transform: translateY(-50px) scale(0.5); opacity: 0; }
+}
+
+.particle {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    background-color: #fff; /* You can customize the color based on the block type */
+    border-radius: 50%;
+    pointer-events: none;
+    animation: particleFade 1s ease-out forwards;
 }
