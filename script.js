@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let bigTntCount = 5;
     let oresCollected = { gold: 0, silver: 0, bronze: 0, azure: 0 };
     let rightmostColumnIndex = gridSize.columns - 1;
+    let lastAddedRowIndex = null; // Track the index of the last added row
 
     const oreGIFs = {
         gold: 'images/goldoredrop.gif',
@@ -85,10 +86,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function createRow() {
         const row = document.createElement('div');
         row.classList.add('mine-row');
+        row.setAttribute('data-row-index', mineGrid.children.length); // Set row index attribute
+
         for (let col = 0; col < gridSize.columns; col++) {
             const block = document.createElement('div');
             block.classList.add('mine-block');
-            block.setAttribute('data-row', row);
+            block.setAttribute('data-row', row.getAttribute('data-row-index'));
             block.setAttribute('data-col', col);
             block.addEventListener('dragover', (e) => e.preventDefault());
             block.addEventListener('dragenter', handleDragEnter);
@@ -162,6 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const block = e.target;
         const blockType = block.getAttribute('data-type');
         const colIndex = parseInt(block.getAttribute('data-col'), 10);
+        const rowIndex = parseInt(block.getAttribute('data-row'), 10);
 
         if (blockType === 'bedrock') return;
 
@@ -177,7 +181,8 @@ document.addEventListener('DOMContentLoaded', function() {
             bigTntCountDisplay.textContent = bigTntCount;
         }
 
-        if (colIndex === rightmostColumnIndex) {
+        // Ensure the destroyed block is not in the last added row before triggering a new row generation
+        if (colIndex === rightmostColumnIndex && rowIndex !== lastAddedRowIndex) {
             shiftGridLeftAndGenerateNewRightColumn();
         }
     }
@@ -334,10 +339,44 @@ document.addEventListener('DOMContentLoaded', function() {
     function destroyBlock(block) {
         const blockType = block.getAttribute('data-type');
         if (blockType !== 'bedrock') {
+            createParticles(block); // Create particles when block is destroyed
             playOreAnimation(block, blockType);
         }
     }
-
+    function createParticles(block) {
+        const particleCount = 10; // Number of particles to generate
+        const blockRect = block.getBoundingClientRect();
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            particle.style.left = `${Math.random() * blockRect.width}px`; // Random position within block
+            particle.style.top = `${Math.random() * blockRect.height}px`;
+            particle.style.backgroundColor = getBlockParticleColor(block.getAttribute('data-type')); // Set particle color based on block type
+            block.appendChild(particle);
+            
+            setTimeout(() => {
+                particle.remove(); // Remove particle after animation
+            }, 1000); // Duration of particle animation
+        }
+    }
+    function getBlockParticleColor(blockType) {
+        switch (blockType) {
+            case 'gold':
+                return '#FFD700'; // Gold color
+            case 'silver':
+                return '#C0C0C0'; // Silver color
+            case 'bronze':
+                return '#CD7F32'; // Bronze color
+            case 'azure':
+                return '#007FFF'; // Azure color
+            case 'sand':
+                return '#f4a460'; // Sand color
+            default:
+                return '#fff'; // Default white color
+        }
+    }
+    
     function collectBlock(block, blockType) {
         oresCollected[blockType]++;
         updateChestContent();
@@ -360,28 +399,37 @@ document.addEventListener('DOMContentLoaded', function() {
     function shiftGridLeftAndGenerateNewRightColumn() {
         depth++;
         document.getElementById('depth-counter').textContent = `Depth: ${depth}`;
-        
+    
         // Increment background position
         backgroundPosition += 60; // Adjust based on your block height
-        
-        // Apply shaking effect
+    
+        // Apply shaking effect to the whole grid before shifting
         mineGrid.classList.add('shake-animation');
-        
+    
         setTimeout(() => {
+            // Remove shaking effect before shifting starts
             mineGrid.classList.remove('shake-animation');
-            
-            // After shaking, move the background and shift the grid
+    
+            // Move the background and shift the grid simultaneously
             mineGrid.style.backgroundPositionY = `-${backgroundPosition}px`;
             mineGrid.classList.add('shift-left');
     
-            setTimeout(() => {
-                mineGrid.querySelectorAll('.mine-row').forEach(row => {
-                    row.removeChild(row.firstElementChild);
-                });
+            // Apply fade-out effect to the leftmost column blocks one by one
+            mineGrid.querySelectorAll('.mine-row').forEach((row, rowIndex) => {
+                const firstBlock = row.firstElementChild;
+                setTimeout(() => {
+                    firstBlock.classList.add('fade-out');
+                    setTimeout(() => {
+                        row.removeChild(firstBlock); // Remove the block after the fade-out animation completes
+                    }, 1000); // Match this duration with the fade-out animation
+                }, rowIndex * 250); // 250ms delay between each block's fade-out
+            });
     
+            setTimeout(() => {
+                // Slowly add the new right column with a glow effect
                 mineGrid.querySelectorAll('.mine-row').forEach((row, rowIndex) => {
                     const newBlock = document.createElement('div');
-                    newBlock.classList.add('mine-block');
+                    newBlock.classList.add('mine-block', 'glow');
                     newBlock.setAttribute('data-row', rowIndex);
                     newBlock.setAttribute('data-col', gridSize.columns - 1);
                     newBlock.addEventListener('dragover', (e) => e.preventDefault());
@@ -389,16 +437,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     newBlock.addEventListener('dragleave', handleDragLeave);
                     newBlock.addEventListener('drop', handleDrop);
                     assignBlockType(newBlock);
-                    row.appendChild(newBlock);
+    
+                    // Add a slight delay for each block to create a staggered effect
+                    setTimeout(() => {
+                        row.appendChild(newBlock);
+    
+                        // Remove the glow effect after some time
+                        setTimeout(() => {
+                            newBlock.classList.remove('glow');
+                        }, 2000); // Glow duration
+                    }, rowIndex * 200); // 250ms delay between each row's new block addition
                 });
     
                 rightmostColumnIndex = gridSize.columns - 1;
+                lastAddedRowIndex = mineGrid.children.length - 1; // Track the index of the last added row
                 mineGrid.classList.remove('shift-left');
-            }, 600); // Match this duration with the animation duration in CSS
     
-        }, 1000); // Shake duration
+            }, 1000); // Duration of the shift-left animation
+    
+        }, 600); // Duration of the shaking effect
     }
     
-    
+        
+
     createMineGrid();
 });
