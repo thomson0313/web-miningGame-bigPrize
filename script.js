@@ -19,13 +19,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let oresCollected = { gold: 0, silver: 0, bronze: 0, azure: 0 };
     let rightmostColumnIndex = gridSize.columns - 1;
 
-    const oreImages = {
-        gold: 'images/goldoredrop.png',
-        silver: 'images/silveroredrop.png',
-        bronze: 'images/bronzeoredrop.png',
-        azure: 'images/blue1.png'
-    };
-
     const oreGIFs = {
         gold: 'images/goldoredrop.gif',
         silver: 'images/silveroredrop.gif',
@@ -33,10 +26,17 @@ document.addEventListener('DOMContentLoaded', function() {
         azure: 'images/aruzeoredrop.gif'
     };
 
+    const tntGIFs = {
+        miniTnt: 'images/mini-tnt1.png',
+        bigTnt: 'images/big-tnt2.gif',
+        miniTntExplode: 'images/mini-tnt1.gif',
+        bigTntExplode: 'images/mini-tnt1.gif'
+    };
+
     const dragImages = {
-        pickaxe: 'images/pickaxe-large.png',
-        miniTnt: 'images/mini-tnt-large.png',
-        bigTnt: 'images/big-tnt-large.png'
+        pickaxe: 'images/2.png',
+        miniTnt: 'images/mini-tnt1.png',
+        bigTnt: 'images/big-tnt2.png'
     };
 
     // Toggle chest open/close
@@ -76,7 +76,6 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
-    // Create the initial visible grid
     function createMineGrid() {
         for (let row = 0; row < gridSize.visibleRows; row++) {
             createRow();
@@ -92,8 +91,8 @@ document.addEventListener('DOMContentLoaded', function() {
             block.setAttribute('data-row', row);
             block.setAttribute('data-col', col);
             block.addEventListener('dragover', (e) => e.preventDefault());
-            block.addEventListener('dragenter', highlightBlock);
-            block.addEventListener('dragleave', unhighlightBlock);
+            block.addEventListener('dragenter', handleDragEnter);
+            block.addEventListener('dragleave', handleDragLeave);
             block.addEventListener('drop', handleDrop);
             assignBlockType(block);
             row.appendChild(block);
@@ -106,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (rand < 0.02) {  // 2% chance for Azure
             block.classList.add('azure-ore');
             block.setAttribute('data-type', 'azure');
-            block.setAttribute('data-hits', '4'); // Azure ore might be tougher to mine
+            block.setAttribute('data-hits', '4');
         } else if (rand < 0.05) {
             block.classList.add('gold-ore');
             block.setAttribute('data-type', 'gold');
@@ -139,8 +138,26 @@ document.addEventListener('DOMContentLoaded', function() {
         e.target.classList.remove('highlight');
     }
 
+    function handleDragEnter(e) {
+        const block = e.target;
+        if (selectedTool === 'miniTnt' || selectedTool === 'bigTnt') {
+            highlightExplosionArea(block);
+        } else {
+            highlightBlock(e);
+        }
+    }
+
+    function handleDragLeave(e) {
+        if (selectedTool === 'miniTnt' || selectedTool === 'bigTnt') {
+            removeExplosionAreaHighlight();
+        } else {
+            unhighlightBlock(e);
+        }
+    }
+
     function handleDrop(e) {
         e.preventDefault();
+        removeExplosionAreaHighlight();
         e.target.classList.remove('highlight');
         const block = e.target;
         const blockType = block.getAttribute('data-type');
@@ -151,82 +168,124 @@ document.addEventListener('DOMContentLoaded', function() {
         if (selectedTool === 'pickaxe' && pickaxeCount > 0) {
             handlePickaxe(block);
         } else if (selectedTool === 'miniTnt' && miniTntCount > 0) {
-            destroyRowWithCollision(block.parentElement, block);
+            placeAndExplodeTNT(block, 'miniTnt');
             miniTntCount--;
             miniTntCountDisplay.textContent = miniTntCount;
         } else if (selectedTool === 'bigTnt' && bigTntCount > 0) {
-            destroy3x3WithCollision(block);
+            placeAndExplodeTNT(block, 'bigTnt');
             bigTntCount--;
             bigTntCountDisplay.textContent = bigTntCount;
         }
 
-        // Check if the destroyed block is in the rightmost column
         if (colIndex === rightmostColumnIndex) {
             shiftGridLeftAndGenerateNewRightColumn();
         }
     }
 
+    function placeAndExplodeTNT(block, tntType) {
+        const tntImage = document.createElement('img');
+        tntImage.src = tntGIFs[tntType];
+        tntImage.classList.add('tnt-animation');
+        block.appendChild(tntImage);
+
+        setTimeout(() => {
+            tntImage.src = tntGIFs[tntType + 'Explode'];
+            setTimeout(() => {
+                tntImage.remove();
+                if (tntType === 'miniTnt') {
+                    destroyRowWithCollision(block.parentElement, block);
+                } else if (tntType === 'bigTnt') {
+                    destroy3x3WithCollision(block);
+                }
+            }, 1000); // Duration of explosion GIF
+        }, 2000); // Delay before TNT explodes
+    }
+
+    function highlightExplosionArea(block) {
+        const col = Array.from(block.parentElement.children).indexOf(block);
+        const row = Array.from(mineGrid.children).indexOf(block.parentElement);
+
+        let blocksToHighlight = [];
+
+        if (selectedTool === 'miniTnt') {
+            for (let i = 0; i < mineGrid.children.length; i++) {
+                const colBlock = mineGrid.children[i].children[col];
+                blocksToHighlight.push(colBlock);
+            }
+        } else if (selectedTool === 'bigTnt') {
+            for (let r = row - 1; r <= row + 1; r++) {
+                if (r < 0 || r >= gridSize.visibleRows) continue;
+
+                for (let c = col - 1; c <= col + 1; c++) {
+                    if (c < 0 || c >= gridSize.columns) continue;
+
+                    const gridBlock = mineGrid.children[r].children[c];
+                    blocksToHighlight.push(gridBlock);
+                }
+            }
+        }
+
+        blocksToHighlight.forEach(block => {
+            block.classList.add('explosion-highlight');
+        });
+    }
+
+    function removeExplosionAreaHighlight() {
+        mineGrid.querySelectorAll('.explosion-highlight').forEach(block => {
+            block.classList.remove('explosion-highlight');
+        });
+    }
+
     function handlePickaxe(block) {
         const blockHits = parseInt(block.getAttribute('data-hits'), 10);
-    
-        // Trigger the animation for the pickaxe regardless of the block type
+        const blockType = block.getAttribute('data-type');
+        
         animatePickaxe(block);
     
-        // Check if the block has hits left
         if (blockHits > 1) {
             block.setAttribute('data-hits', blockHits - 1);
         } else {
-            const blockType = block.getAttribute('data-type');
-            
-            // Handle sand block separately
             if (blockType === 'sand') {
                 createDustParticles(block);
-                block.style.visibility = 'hidden'; // Hide the block after dust particles
+                block.style.visibility = 'hidden';
             } else {
-                // For ores, play the GIF animation
                 playOreAnimation(block, blockType);
             }
         }
-        
-        // Decrease the pickaxe count and update the display
+    
         pickaxeCount--;
         pickaxeCountDisplay.textContent = pickaxeCount;
     }
-        
 
     function playOreAnimation(block, blockType) {
         const oreGif = oreGIFs[blockType];
         block.style.backgroundImage = `url('${oreGif}')`;
     
-        // Assuming the GIF animation duration is 2 seconds (adjust as necessary)
         setTimeout(() => {
             block.style.visibility = 'hidden';
-            collectBlock(block, blockType); // Collect the block after the animation
-        }, 2000); // Adjust based on the duration of your GIF
+            collectBlock(block, blockType);
+        }, 2000);
     }
-    
 
     function animatePickaxe(block) {
         const pickaxeImage = document.createElement('img');
-        pickaxeImage.src = 'images/pickaxe1.png'; // Use the correct path to your pickaxe image
+        pickaxeImage.src = 'images/pickaxe1.png';
         pickaxeImage.classList.add('pickaxe-animation');
         block.appendChild(pickaxeImage);
     
-        // Remove the pickaxe image after the animation
         setTimeout(() => {
             pickaxeImage.remove();
         }, 300);
     }
 
     function createDustParticles(block) {
-        for (let i = 0; i < 10; i++) { // Generate 10 particles
+        for (let i = 0; i < 10; i++) {
             const particle = document.createElement('div');
             particle.classList.add('dust-particle');
-            particle.style.left = `${Math.random() * 50}px`; // Random position within block
+            particle.style.left = `${Math.random() * 50}px`;
             particle.style.top = `${Math.random() * 50}px`;
             block.appendChild(particle);
     
-            // Remove the particle after the animation
             setTimeout(() => {
                 particle.remove();
             }, 500);
@@ -237,21 +296,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const centerColIndex = Array.from(centerBlock.parentElement.children).indexOf(centerBlock);
         const centerRowIndex = Array.from(mineGrid.children).indexOf(row);
 
-        // Destroy above the center block
         for (let i = centerRowIndex - 1; i >= 0; i--) {
             const block = mineGrid.children[i].children[centerColIndex];
-            if (block.getAttribute('data-type') === 'bedrock') break; // Stop if bedrock
+            if (block.getAttribute('data-type') === 'bedrock') break;
             destroyBlock(block);
         }
 
-        // Destroy below the center block
         for (let i = centerRowIndex + 1; i < mineGrid.children.length; i++) {
             const block = mineGrid.children[i].children[centerColIndex];
-            if (block.getAttribute('data-type') === 'bedrock') break; // Stop if bedrock
+            if (block.getAttribute('data-type') === 'bedrock') break;
             destroyBlock(block);
         }
 
-        // Destroy the center block itself
         destroyBlock(centerBlock);
     }
 
@@ -278,7 +334,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function destroyBlock(block) {
         const blockType = block.getAttribute('data-type');
         if (blockType !== 'bedrock') {
-            // Play the GIF animation for TNT destruction
             playOreAnimation(block, blockType);
         }
     }
@@ -299,29 +354,51 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    let depth = 0;
+    let backgroundPosition = 0;
+    
     function shiftGridLeftAndGenerateNewRightColumn() {
-        // Remove the first column from each row (shifting left)
-        mineGrid.querySelectorAll('.mine-row').forEach(row => {
-            row.removeChild(row.firstElementChild);
-        });
-
-        // Add a new column on the right side
-        mineGrid.querySelectorAll('.mine-row').forEach((row, rowIndex) => {
-            const newBlock = document.createElement('div');
-            newBlock.classList.add('mine-block');
-            newBlock.setAttribute('data-row', rowIndex);
-            newBlock.setAttribute('data-col', gridSize.columns - 1);
-            newBlock.addEventListener('dragover', (e) => e.preventDefault());
-            newBlock.addEventListener('dragenter', highlightBlock);
-            newBlock.addEventListener('dragleave', unhighlightBlock);
-            newBlock.addEventListener('drop', handleDrop);
-            assignBlockType(newBlock);
-            row.appendChild(newBlock);
-        });
-
-        // Reset the rightmost column index
-        rightmostColumnIndex = gridSize.columns - 1;
+        depth++;
+        document.getElementById('depth-counter').textContent = `Depth: ${depth}`;
+        
+        // Increment background position
+        backgroundPosition += 60; // Adjust based on your block height
+        
+        // Apply shaking effect
+        mineGrid.classList.add('shake-animation');
+        
+        setTimeout(() => {
+            mineGrid.classList.remove('shake-animation');
+            
+            // After shaking, move the background and shift the grid
+            mineGrid.style.backgroundPositionY = `-${backgroundPosition}px`;
+            mineGrid.classList.add('shift-left');
+    
+            setTimeout(() => {
+                mineGrid.querySelectorAll('.mine-row').forEach(row => {
+                    row.removeChild(row.firstElementChild);
+                });
+    
+                mineGrid.querySelectorAll('.mine-row').forEach((row, rowIndex) => {
+                    const newBlock = document.createElement('div');
+                    newBlock.classList.add('mine-block');
+                    newBlock.setAttribute('data-row', rowIndex);
+                    newBlock.setAttribute('data-col', gridSize.columns - 1);
+                    newBlock.addEventListener('dragover', (e) => e.preventDefault());
+                    newBlock.addEventListener('dragenter', handleDragEnter);
+                    newBlock.addEventListener('dragleave', handleDragLeave);
+                    newBlock.addEventListener('drop', handleDrop);
+                    assignBlockType(newBlock);
+                    row.appendChild(newBlock);
+                });
+    
+                rightmostColumnIndex = gridSize.columns - 1;
+                mineGrid.classList.remove('shift-left');
+            }, 600); // Match this duration with the animation duration in CSS
+    
+        }, 1000); // Shake duration
     }
-
+    
+    
     createMineGrid();
 });
