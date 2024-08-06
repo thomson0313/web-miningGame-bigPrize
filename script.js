@@ -105,27 +105,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function assignBlockType(block) {
         const rand = Math.random();
-        if (rand < 0.02) {  // 2% chance for Azure
+        if (rand < 0.15) {  // 15% chance for empty (void) block
+            block.classList.add('empty');
+            block.setAttribute('data-type', 'empty');
+        } else if (rand < 0.20) {  // 5% chance for Azure ore
             block.classList.add('azure-ore');
             block.setAttribute('data-type', 'azure');
             block.setAttribute('data-hits', '4');
-        } else if (rand < 0.05) {
+        } else if (rand < 0.30) {  // 10% chance for Gold ore
             block.classList.add('gold-ore');
             block.setAttribute('data-type', 'gold');
             block.setAttribute('data-hits', '3');
-        } else if (rand < 0.15) {
+        } else if (rand < 0.45) {  // 15% chance for Silver ore
             block.classList.add('silver-ore');
             block.setAttribute('data-type', 'silver');
             block.setAttribute('data-hits', '2');
-        } else if (rand < 0.30) {
+        } else if (rand < 0.60) {  // 15% chance for Bronze ore
             block.classList.add('bronze-ore');
             block.setAttribute('data-type', 'bronze');
             block.setAttribute('data-hits', '1');
-        } else if (rand < 0.75) {
+        } else if (rand < 0.90) {  // 30% chance for Sand
             block.classList.add('sand');
             block.setAttribute('data-type', 'sand');
             block.setAttribute('data-hits', '1');
-        } else {
+        } else {  // 10% chance for Bedrock
             block.classList.add('bedrock');
             block.setAttribute('data-type', 'bedrock');
         }
@@ -158,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+
     function handleDrop(e) {
         e.preventDefault();
         removeExplosionAreaHighlight();
@@ -166,9 +170,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const blockType = block.getAttribute('data-type');
         const colIndex = parseInt(block.getAttribute('data-col'), 10);
         const rowIndex = parseInt(block.getAttribute('data-row'), 10);
-
-        if (blockType === 'bedrock') return;
-
+    
+        // Restrict TNT placement to empty blocks only
+        if (blockType === 'bedrock' || (blockType !== 'empty' && (selectedTool === 'miniTnt' || selectedTool === 'bigTnt'))) return;
+    
         if (selectedTool === 'pickaxe' && pickaxeCount > 0) {
             handlePickaxe(block);
         } else if (selectedTool === 'miniTnt' && miniTntCount > 0) {
@@ -180,14 +185,14 @@ document.addEventListener('DOMContentLoaded', function() {
             bigTntCount--;
             bigTntCountDisplay.textContent = bigTntCount;
         }
-
+    
         // Ensure the destroyed block is not in the last added row before triggering a new row generation
         if (colIndex === rightmostColumnIndex && rowIndex !== lastAddedRowIndex) {
             shiftGridLeftAndGenerateNewRightColumn();
         }
     }
-
-    function placeAndExplodeTNT(block, tntType) {
+    
+        function placeAndExplodeTNT(block, tntType) {
         const tntImage = document.createElement('img');
         tntImage.src = tntGIFs[tntType];
         tntImage.classList.add('tnt-animation');
@@ -335,14 +340,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-
     function destroyBlock(block) {
         const blockType = block.getAttribute('data-type');
         if (blockType !== 'bedrock') {
             createParticles(block); // Create particles when block is destroyed
             playOreAnimation(block, blockType);
+            
+            setTimeout(() => {
+                block.style.backgroundImage = ''; // Remove the ore's background image
+                block.setAttribute('data-type', 'empty'); // Set the block type to 'empty'
+                block.style.visibility = 'visible'; // Ensure the block is visible as an empty block
+            }, 2000); // Match this duration with the ore animation duration
         }
     }
+    
+    
+    
+    
     function createParticles(block) {
         const particleCount = 10; // Number of particles to generate
         const blockRect = block.getBoundingClientRect();
@@ -396,10 +410,27 @@ document.addEventListener('DOMContentLoaded', function() {
     let depth = 0;
     let backgroundPosition = 0;
     
+
+    function updateDepthCounter(newDepth) {
+        const depthCounter = document.getElementById('depth-counter');
+        const currentDepth = parseInt(depthCounter.textContent.replace('Depth: ', ''), 10);
+        const increment = newDepth > currentDepth ? 1 : -1;
+        const duration = 500; // Total animation duration in ms
+        const steps = Math.abs(newDepth - currentDepth);
+        const stepTime = duration / steps; // Time per increment
+
+        let counter = currentDepth;
+
+        const timer = setInterval(() => {
+            counter += increment;
+            depthCounter.textContent = `Depth: ${counter}`;
+            if (counter === newDepth) {
+                clearInterval(timer);
+            }
+        }, stepTime);
+    }
+
     function shiftGridLeftAndGenerateNewRightColumn() {
-        depth++;
-        document.getElementById('depth-counter').textContent = `Depth: ${depth}`;
-    
         // Increment background position
         backgroundPosition += 60; // Adjust based on your block height
     
@@ -437,7 +468,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     newBlock.addEventListener('dragleave', handleDragLeave);
                     newBlock.addEventListener('drop', handleDrop);
                     assignBlockType(newBlock);
-    
+
+                    // Increment the depth counter for each block added
+                    depth++;
+                    updateDepthCounter(depth); // Use the animated counter function
+
                     // Add a slight delay for each block to create a staggered effect
                     setTimeout(() => {
                         row.appendChild(newBlock);
@@ -458,7 +493,5 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 600); // Duration of the shaking effect
     }
     
-        
-
     createMineGrid();
 });
