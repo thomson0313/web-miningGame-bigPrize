@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const gridSize = { columns: 6, visibleRows: 6 };
+    const gridSize = { columns: 6, visibleRows: 7 };
     const mineGrid = document.getElementById('mine-grid');
     const pickaxeButton = document.getElementById('pickaxe-button');
     const miniTntButton = document.getElementById('mini-tnt-button');
