@@ -200,7 +200,8 @@ body {
 /* Pickaxe swing animation */
 @keyframes pickaxe-swing {
     0% { transform: rotate(0deg); }
-    50% { transform: rotate(20deg); }
+    40% { transform: rotate(40deg); }
+    80% { transform: rotate(20deg); }
     100% { transform: rotate(0deg); }
 }
 
@@ -209,7 +210,7 @@ body {
     width: 60px;
     height: 60px;
     z-index: 50;
-    animation: pickaxe-swing 0.3s ease-in-out;
+    animation: pickaxe-swing 0.5s ease-in-out;
     pointer-events: none;
 }
 

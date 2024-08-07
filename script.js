@@ -105,30 +105,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function assignBlockType(block) {
         const rand = Math.random();
-        if (rand < 0.15) {  // 15% chance for empty (void) block
+        if (rand < 0.35) {  // 35% chance for empty (void) block
             block.classList.add('empty');
             block.setAttribute('data-type', 'empty');
-        } else if (rand < 0.20) {  // 5% chance for Azure ore
+        } else if (rand < 0.38) {  // 3% chance for Azure ore
             block.classList.add('azure-ore');
             block.setAttribute('data-type', 'azure');
             block.setAttribute('data-hits', '4');
-        } else if (rand < 0.30) {  // 10% chance for Gold ore
+        } else if (rand < 0.41) {  // 3% chance for Gold ore
             block.classList.add('gold-ore');
             block.setAttribute('data-type', 'gold');
             block.setAttribute('data-hits', '3');
-        } else if (rand < 0.45) {  // 15% chance for Silver ore
+        } else if (rand < 0.45) {  // 4% chance for Silver ore
             block.classList.add('silver-ore');
             block.setAttribute('data-type', 'silver');
             block.setAttribute('data-hits', '2');
-        } else if (rand < 0.60) {  // 15% chance for Bronze ore
+        } else if (rand < 0.50) {  // 5% chance for Bronze ore
             block.classList.add('bronze-ore');
             block.setAttribute('data-type', 'bronze');
             block.setAttribute('data-hits', '1');
-        } else if (rand < 0.90) {  // 30% chance for Sand
+        } else if (rand < 0.85) {  // 30% chance for Sand
             block.classList.add('sand');
             block.setAttribute('data-type', 'sand');
             block.setAttribute('data-hits', '1');
-        } else {  // 10% chance for Bedrock
+        } else {  // 15% chance for Bedrock
             block.classList.add('bedrock');
             block.setAttribute('data-type', 'bedrock');
         }
@@ -171,11 +171,34 @@ document.addEventListener('DOMContentLoaded', function() {
         const colIndex = parseInt(block.getAttribute('data-col'), 10);
         const rowIndex = parseInt(block.getAttribute('data-row'), 10);
     
-        // Restrict TNT placement to empty blocks only
-        if (blockType === 'bedrock' || (blockType !== 'empty' && (selectedTool === 'miniTnt' || selectedTool === 'bigTnt'))) return;
+        // Instrumens is restricted to bedrock and Restrict TNT placement to empty blocks and last row 
+        if (blockType === 'bedrock' || ((blockType !== 'empty' || colIndex === rightmostColumnIndex ) && (selectedTool === 'miniTnt' || selectedTool === 'bigTnt'))) return;
     
         if (selectedTool === 'pickaxe' && pickaxeCount > 0) {
+            // handle drop on last row
+            if (colIndex === rightmostColumnIndex) {
+                let generatable = 1;
+                const row = Array.from(mineGrid.children);
+                for (let r = 0; r < row.length; r++) {
+                    const col = Array.from(row[r].children);
+                    for (let c = 0; c < col.length - 1; c++) {
+                        const dataType = col[c].getAttribute('data-type'); 
+                        // console.log(generatable)
+                        if(dataType !== ('sand' || 'bedrock' ||  'empty')) {
+                            console.log(dataType !== ('sand' || 'bedrock' ||  'empty'))
+                            generatable = 0;
+                        }
+                    }
+                }
+                // console.log(generatable)
+                // if(generatable !== 1) {
+                //     return;
+                // } 
+                handlePickaxe(block);
+                // shiftGridLeftAndGenerateNewRightColumn();
+            }
             handlePickaxe(block);
+
         } else if (selectedTool === 'miniTnt' && miniTntCount > 0) {
             placeAndExplodeTNT(block, 'miniTnt');
             miniTntCount--;
@@ -185,14 +208,9 @@ document.addEventListener('DOMContentLoaded', function() {
             bigTntCount--;
             bigTntCountDisplay.textContent = bigTntCount;
         }
-    
-        // Ensure the destroyed block is not in the last added row before triggering a new row generation
-        if (colIndex === rightmostColumnIndex && rowIndex !== lastAddedRowIndex) {
-            shiftGridLeftAndGenerateNewRightColumn();
-        }
     }
     
-        function placeAndExplodeTNT(block, tntType) {
+    function placeAndExplodeTNT(block, tntType) {
         const tntImage = document.createElement('img');
         tntImage.src = tntGIFs[tntType];
         tntImage.classList.add('tnt-animation');
@@ -250,16 +268,26 @@ document.addEventListener('DOMContentLoaded', function() {
         const blockHits = parseInt(block.getAttribute('data-hits'), 10);
         const blockType = block.getAttribute('data-type');
         
-        animatePickaxe(block);
-    
+        
         if (blockHits > 1) {
+            animatePickaxe(block);
             block.setAttribute('data-hits', blockHits - 1);
         } else {
-            if (blockType === 'sand') {
-                createDustParticles(block);
-                block.style.visibility = 'hidden';
+            if(blockType === 'empty') {
+                return;
             } else {
-                playOreAnimation(block, blockType);
+                animatePickaxe(block);
+                if (blockType === 'sand') {
+                    createDustParticles(block);
+                    setTimeout(() => {
+                        // block.style.visibility = 'hidden';
+                        block.setAttribute('data-type', 'empty')
+                        block.classList.remove('sand');
+                        block.classList.add('empty');
+                    }, 500)
+                } else {
+                    playOreAnimation(block, blockType);
+                }
             }
         }
     
@@ -268,13 +296,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function playOreAnimation(block, blockType) {
-        const oreGif = oreGIFs[blockType];
-        block.style.backgroundImage = `url('${oreGif}')`;
-    
         setTimeout(() => {
-            block.style.visibility = 'hidden';
-            collectBlock(block, blockType);
-        }, 2000);
+            const oreGif = oreGIFs[blockType];
+            block.style.backgroundImage = `url('${oreGif}')`;
+            setTimeout(() => {
+                block.style.backgroundImage = '';
+                block.setAttribute('data-type', 'empty')
+                block.classList.remove(blockType + '-ore');
+                block.classList.add('empty');
+                collectBlock(block, blockType);
+            }, 300)
+        }, 500);
     }
 
     function animatePickaxe(block) {
@@ -285,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
         setTimeout(() => {
             pickaxeImage.remove();
-        }, 300);
+        }, 500);
     }
 
     function createDustParticles(block) {
@@ -308,17 +340,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         for (let i = centerRowIndex - 1; i >= 0; i--) {
             const block = mineGrid.children[i].children[centerColIndex];
-            if (block.getAttribute('data-type') === 'bedrock') break;
+            // if (block.getAttribute('data-type') === 'bedrock') break;
             destroyBlock(block);
         }
 
         for (let i = centerRowIndex + 1; i < mineGrid.children.length; i++) {
             const block = mineGrid.children[i].children[centerColIndex];
-            if (block.getAttribute('data-type') === 'bedrock') break;
+            // if (block.getAttribute('data-type') === 'bedrock') break;
             destroyBlock(block);
         }
 
-        destroyBlock(centerBlock);
+        // destroyBlock(centerBlock);
     }
 
     function destroy3x3WithCollision(centerBlock) {
@@ -332,9 +364,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (c < 0 || c >= gridSize.columns) continue;
 
                 const block = mineGrid.children[r].children[c];
-                const blockType = block.getAttribute('data-type');
+                // const blockType = block.getAttribute('data-type');
 
-                if (blockType === 'bedrock') continue;
+                // if (blockType === 'bedrock') continue;
 
                 destroyBlock(block);
             }
@@ -342,16 +374,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     function destroyBlock(block) {
         const blockType = block.getAttribute('data-type');
-        if (blockType !== 'bedrock') {
-            createParticles(block); // Create particles when block is destroyed
-            playOreAnimation(block, blockType);
-            
-            setTimeout(() => {
-                block.style.backgroundImage = ''; // Remove the ore's background image
-                block.setAttribute('data-type', 'empty'); // Set the block type to 'empty'
-                block.style.visibility = 'visible'; // Ensure the block is visible as an empty block
-            }, 2000); // Match this duration with the ore animation duration
-        }
+        createParticles(block); // Create particles when block is destroyed
+        playOreAnimation(block, blockType);
+        
+        // setTimeout(() => {
+            block.style.backgroundImage = ''; // Remove the ore's background image
+            block.classList.remove(blockType);
+            block.classList.add('empty');
+            block.setAttribute('data-type', 'empty'); // Set the block type to 'empty'
+            block.style.visibility = 'visible'; // Ensure the block is visible as an empty block
+        // }, 2000); // Match this duration with the ore animation duration
     }
     
     
@@ -460,7 +492,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Slowly add the new right column with a glow effect
                 mineGrid.querySelectorAll('.mine-row').forEach((row, rowIndex) => {
                     const newBlock = document.createElement('div');
-                    newBlock.classList.add('mine-block', 'glow');
+                    // newBlock.classList.add('mine-block', 'glow');
                     newBlock.setAttribute('data-row', rowIndex);
                     newBlock.setAttribute('data-col', gridSize.columns - 1);
                     newBlock.addEventListener('dragover', (e) => e.preventDefault());
@@ -476,6 +508,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Add a slight delay for each block to create a staggered effect
                     setTimeout(() => {
                         row.appendChild(newBlock);
+                        
     
                         // Remove the glow effect after some time
                         setTimeout(() => {
