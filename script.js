@@ -13,9 +13,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const chestContent = document.getElementById('chest-content');
 
     let selectedTool = null;
-    let pickaxeCount = 10;
-    let miniTntCount = 10;
-    let bigTntCount = 5;
+    let pickaxeCount = 50;
+    let miniTntCount = 50;
+    let bigTntCount = 20;
     let oresCollected = { gold: 0, silver: 0, bronze: 0, azure: 0 };
     let depth = 0;
     let backgroundPosition = 0;
@@ -111,19 +111,19 @@ document.addEventListener('DOMContentLoaded', function() {
             block.classList.add('empty');
             block.setAttribute('data-type', 'empty');
         } else if (rand < 0.38) {  // 3% chance for Azure ore
-            block.classList.add('azure-ore');
+            block.classList.add('azure');
             block.setAttribute('data-type', 'azure');
             block.setAttribute('data-hits', '4');
         } else if (rand < 0.41) {  // 3% chance for Gold ore
-            block.classList.add('gold-ore');
+            block.classList.add('gold');
             block.setAttribute('data-type', 'gold');
             block.setAttribute('data-hits', '3');
         } else if (rand < 0.45) {  // 4% chance for Silver ore
-            block.classList.add('silver-ore');
+            block.classList.add('silver');
             block.setAttribute('data-type', 'silver');
             block.setAttribute('data-hits', '2');
         } else if (rand < 0.50) {  // 5% chance for Bronze ore
-            block.classList.add('bronze-ore');
+            block.classList.add('bronze');
             block.setAttribute('data-type', 'bronze');
             block.setAttribute('data-hits', '1');
         } else if (rand < 0.85) {  // 30% chance for Sand
@@ -131,6 +131,37 @@ document.addEventListener('DOMContentLoaded', function() {
             block.setAttribute('data-type', 'sand');
             block.setAttribute('data-hits', '1');
         } else {  // 15% chance for Bedrock
+            block.classList.add('bedrock');
+            block.setAttribute('data-type', 'bedrock');
+        }
+    }
+
+    function assignLastRowBlockType(block) {
+        const rand = Math.random();
+        if (rand < 0.01) {  // 1% chance for empty (void) block
+            block.classList.add('empty');
+            block.setAttribute('data-type', 'empty');
+        } else if (rand < 0.03) {  // 2% chance for Azure ore
+            block.classList.add('azure');
+            block.setAttribute('data-type', 'azure');
+            block.setAttribute('data-hits', '4');
+        } else if (rand < 0.05) {  // 2% chance for Gold ore
+            block.classList.add('gold');
+            block.setAttribute('data-type', 'gold');
+            block.setAttribute('data-hits', '3');
+        } else if (rand < 0.07) {  // 2% chance for Silver ore
+            block.classList.add('silver');
+            block.setAttribute('data-type', 'silver');
+            block.setAttribute('data-hits', '2');
+        } else if (rand < 0.09) {  // 2% chance for Bronze ore
+            block.classList.add('bronze');
+            block.setAttribute('data-type', 'bronze');
+            block.setAttribute('data-hits', '1');
+        } else if (rand < 0.19) {  // 10% chance for Sand
+            block.classList.add('sand');
+            block.setAttribute('data-type', 'sand');
+            block.setAttribute('data-hits', '1');
+        } else {  // 81% chance for Bedrock
             block.classList.add('bedrock');
             block.setAttribute('data-type', 'bedrock');
         }
@@ -174,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const rowIndex = parseInt(block.getAttribute('data-row'), 10);
     
         // Instrumens is restricted to bedrock and Restrict TNT placement to empty blocks and last row 
-        if (blockType === 'bedrock' || ((blockType !== 'empty' || colIndex === rightmostColumnIndex ) && (selectedTool === 'miniTnt' || selectedTool === 'bigTnt'))) return;
+        if (((blockType !== 'empty' || colIndex === rightmostColumnIndex ) && (selectedTool === 'miniTnt' || selectedTool === 'bigTnt'))) return;
     
         if (selectedTool === 'pickaxe' && pickaxeCount > 0) {
             // handle drop on last row
@@ -192,6 +223,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 if(generatable === 0) {
+                    // shiftGridLeftAndGenerateNewRightColumn();
                     alert('There are still metals to dig...')
                     return;
                 } 
@@ -303,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 block.style.backgroundImage = '';
                 block.setAttribute('data-type', 'empty')
-                block.classList.remove(blockType + '-ore');
+                block.classList.remove(blockType);
                 block.classList.add('empty');
                 collectBlock(block, blockType);
             }, 300)
@@ -489,7 +521,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 mineGrid.querySelectorAll('.mine-row').forEach((row, rowIndex) => {
                     const newBlock = document.createElement('div');
                     newBlock.classList.add('mine-block');
-                    if(newBlock.dataType !== 'empty') {
+                    if(newBlock.getAttribute('data-type') !== 'empty') {
                         newBlock.classList.add('glow');
                     }
                     newBlock.setAttribute('data-row', rowIndex);
@@ -498,7 +530,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     newBlock.addEventListener('dragenter', handleDragEnter);
                     newBlock.addEventListener('dragleave', handleDragLeave);
                     newBlock.addEventListener('drop', handleDrop);
-                    assignBlockType(newBlock);
+                    assignLastRowBlockType(newBlock);
+                    
+                    
+
+                    const lastBlock = row.lastChild;
+                    lastBlock.classList.remove(lastBlock.getAttribute('data-type'));
+                    assignBlockType(lastBlock);
 
                     
                     // Add a slight delay for each block to create a staggered effect
@@ -512,7 +550,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }, 300); // Glow duration
                     }, 600); // 250ms delay between each row's new block addition
                 });
-                
+
                 // Increment the depth counter for each block added
                 depth++;
                 updateDepthCounter(depth); // Use the animated counter function
@@ -520,6 +558,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 rightmostColumnIndex = depth + 5;
                 lastAddedRowIndex = mineGrid.children.length - 1; // Track the index of the last added row
                 mineGrid.classList.remove('shift-left');
+                
     
             }, 350); // Duration of the shift-left animation
     

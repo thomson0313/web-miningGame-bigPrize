@@ -78,19 +78,19 @@ body {
     background-image: url('images/bedrock1.png');
 }
 
-.mine-block.silver-ore {
+.mine-block.silver {
     background-image: url('images/silverore1.png');
 }
 
-.mine-block.gold-ore {
+.mine-block.gold {
     background-image: url('images/goldore1.png');
 }
 
-.mine-block.bronze-ore {
+.mine-block.bronze {
     background-image: url('images/bronzeore1.png');
 }
 
-.mine-block.azure-ore {
+.mine-block.azure {
     background-image: url('images/blue1.png');
 }
 
