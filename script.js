@@ -17,7 +17,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let miniTntCount = 10;
     let bigTntCount = 5;
     let oresCollected = { gold: 0, silver: 0, bronze: 0, azure: 0 };
-    let rightmostColumnIndex = gridSize.columns - 1;
+    let depth = 0;
+    let backgroundPosition = 0;
+    let rightmostColumnIndex = depth + 5;
     let lastAddedRowIndex = null; // Track the index of the last added row
 
     const oreGIFs = {
@@ -182,20 +184,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 for (let r = 0; r < row.length; r++) {
                     const col = Array.from(row[r].children);
                     for (let c = 0; c < col.length - 1; c++) {
-                        const dataType = col[c].getAttribute('data-type'); 
-                        // console.log(generatable)
-                        if(dataType !== ('sand' || 'bedrock' ||  'empty')) {
-                            console.log(dataType !== ('sand' || 'bedrock' ||  'empty'))
+                        const dataType = col[c].getAttribute('data-type');
+
+                        if(dataType !== 'sand' && dataType !== 'bedrock' && dataType !== 'empty') {
                             generatable = 0;
                         }
                     }
                 }
-                // console.log(generatable)
-                // if(generatable !== 1) {
-                //     return;
-                // } 
+                if(generatable === 0) {
+                    alert('There are still metals to dig...')
+                    return;
+                } 
                 handlePickaxe(block);
-                // shiftGridLeftAndGenerateNewRightColumn();
+                shiftGridLeftAndGenerateNewRightColumn();
             }
             handlePickaxe(block);
 
@@ -306,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 block.classList.add('empty');
                 collectBlock(block, blockType);
             }, 300)
-        }, 500);
+        }, 800);
     }
 
     function animatePickaxe(block) {
@@ -349,8 +350,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // if (block.getAttribute('data-type') === 'bedrock') break;
             destroyBlock(block);
         }
-
-        // destroyBlock(centerBlock);
     }
 
     function destroy3x3WithCollision(centerBlock) {
@@ -377,13 +376,13 @@ document.addEventListener('DOMContentLoaded', function() {
         createParticles(block); // Create particles when block is destroyed
         playOreAnimation(block, blockType);
         
-        // setTimeout(() => {
+        setTimeout(() => {
             block.style.backgroundImage = ''; // Remove the ore's background image
             block.classList.remove(blockType);
             block.classList.add('empty');
             block.setAttribute('data-type', 'empty'); // Set the block type to 'empty'
             block.style.visibility = 'visible'; // Ensure the block is visible as an empty block
-        // }, 2000); // Match this duration with the ore animation duration
+        }, 500); // Match this duration with the ore animation duration
     }
     
     
@@ -438,9 +437,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-
-    let depth = 0;
-    let backgroundPosition = 0;
     
 
     function updateDepthCounter(newDepth) {
@@ -468,7 +464,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
         // Apply shaking effect to the whole grid before shifting
         mineGrid.classList.add('shake-animation');
-    
+        
         setTimeout(() => {
             // Remove shaking effect before shifting starts
             mineGrid.classList.remove('shake-animation');
@@ -484,44 +480,48 @@ document.addEventListener('DOMContentLoaded', function() {
                     firstBlock.classList.add('fade-out');
                     setTimeout(() => {
                         row.removeChild(firstBlock); // Remove the block after the fade-out animation completes
-                    }, 1000); // Match this duration with the fade-out animation
-                }, rowIndex * 250); // 250ms delay between each block's fade-out
+                    }, 300); // Match this duration with the fade-out animation
+                },  900); // 250ms delay between each block's fade-out
             });
     
             setTimeout(() => {
                 // Slowly add the new right column with a glow effect
                 mineGrid.querySelectorAll('.mine-row').forEach((row, rowIndex) => {
                     const newBlock = document.createElement('div');
-                    // newBlock.classList.add('mine-block', 'glow');
+                    newBlock.classList.add('mine-block');
+                    if(newBlock.dataType !== 'empty') {
+                        newBlock.classList.add('glow');
+                    }
                     newBlock.setAttribute('data-row', rowIndex);
-                    newBlock.setAttribute('data-col', gridSize.columns - 1);
+                    newBlock.setAttribute('data-col', depth+6);
                     newBlock.addEventListener('dragover', (e) => e.preventDefault());
                     newBlock.addEventListener('dragenter', handleDragEnter);
                     newBlock.addEventListener('dragleave', handleDragLeave);
                     newBlock.addEventListener('drop', handleDrop);
                     assignBlockType(newBlock);
 
-                    // Increment the depth counter for each block added
-                    depth++;
-                    updateDepthCounter(depth); // Use the animated counter function
-
+                    
                     // Add a slight delay for each block to create a staggered effect
                     setTimeout(() => {
                         row.appendChild(newBlock);
                         
-    
+                        
                         // Remove the glow effect after some time
                         setTimeout(() => {
                             newBlock.classList.remove('glow');
-                        }, 2000); // Glow duration
-                    }, rowIndex * 200); // 250ms delay between each row's new block addition
+                        }, 300); // Glow duration
+                    }, 600); // 250ms delay between each row's new block addition
                 });
-    
-                rightmostColumnIndex = gridSize.columns - 1;
+                
+                // Increment the depth counter for each block added
+                depth++;
+                updateDepthCounter(depth); // Use the animated counter function
+
+                rightmostColumnIndex = depth + 5;
                 lastAddedRowIndex = mineGrid.children.length - 1; // Track the index of the last added row
                 mineGrid.classList.remove('shift-left');
     
-            }, 1000); // Duration of the shift-left animation
+            }, 350); // Duration of the shift-left animation
     
         }, 600); // Duration of the shaking effect
     }
