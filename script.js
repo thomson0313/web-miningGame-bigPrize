@@ -138,30 +138,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function assignLastRowBlockType(block) {
         const rand = Math.random();
-        if (rand < 0.01) {  // 1% chance for empty (void) block
-            block.classList.add('empty');
-            block.setAttribute('data-type', 'empty');
-        } else if (rand < 0.03) {  // 2% chance for Azure ore
-            block.classList.add('azure');
-            block.setAttribute('data-type', 'azure');
-            block.setAttribute('data-hits', '4');
-        } else if (rand < 0.05) {  // 2% chance for Gold ore
-            block.classList.add('gold');
-            block.setAttribute('data-type', 'gold');
-            block.setAttribute('data-hits', '3');
-        } else if (rand < 0.07) {  // 2% chance for Silver ore
-            block.classList.add('silver');
-            block.setAttribute('data-type', 'silver');
-            block.setAttribute('data-hits', '2');
-        } else if (rand < 0.09) {  // 2% chance for Bronze ore
-            block.classList.add('bronze');
-            block.setAttribute('data-type', 'bronze');
-            block.setAttribute('data-hits', '1');
-        } else if (rand < 0.19) {  // 10% chance for Sand
+        if (rand < 0.145) {  // 14.5% chance for empty (void) block
             block.classList.add('sand');
             block.setAttribute('data-type', 'sand');
-            block.setAttribute('data-hits', '1');
-        } else {  // 81% chance for Bedrock
+        } else {  // 85.5% chance for Bedrock
             block.classList.add('bedrock');
             block.setAttribute('data-type', 'bedrock');
         }
@@ -223,7 +203,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 if(generatable === 0) {
-                    // shiftGridLeftAndGenerateNewRightColumn();
                     alert('There are still metals to dig...')
                     return;
                 } 
@@ -490,12 +469,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }, stepTime);
     }
 
+
+    function isLastRowValid() {
+
+        const lastRow = mineGrid.children[mineGrid.children.length - 2];
+        const blocks = lastRow.children;
+    
+        for (let block of blocks) {
+            const blockType = block.getAttribute('data-type');
+            // Check if the block is not bedrock and not empty
+            if (blockType !== 'bedrock' && blockType !== 'empty' && blockType !== 'sand') {
+                return true; // A valid row was found
+            }
+        }
+        return false; // Row is invalid (full of bedrock or empty blocks)
+    }
+
     function shiftGridLeftAndGenerateNewRightColumn() {
+
         // Increment background position
         backgroundPosition += 60; // Adjust based on your block height
     
         // Apply shaking effect to the whole grid before shifting
         mineGrid.classList.add('shake-animation');
+        let slidable = true;
         
         setTimeout(() => {
             // Remove shaking effect before shifting starts
@@ -517,6 +514,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     
             setTimeout(() => {
+
                 // Slowly add the new right column with a glow effect
                 mineGrid.querySelectorAll('.mine-row').forEach((row, rowIndex) => {
                     const newBlock = document.createElement('div');
@@ -530,15 +528,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     newBlock.addEventListener('dragenter', handleDragEnter);
                     newBlock.addEventListener('dragleave', handleDragLeave);
                     newBlock.addEventListener('drop', handleDrop);
-                    assignLastRowBlockType(newBlock);
-                    
-                    
+                    assignLastRowBlockType(newBlock); 
 
                     const lastBlock = row.lastChild;
                     lastBlock.classList.remove(lastBlock.getAttribute('data-type'));
                     assignBlockType(lastBlock);
 
-                    
+                    const lastBlockType = lastBlock.getAttribute('data-type');
+
+                    if(lastBlockType !== 'bedrock' && lastBlockType !== 'empty' && lastBlockType !== 'sand') {
+                        slidable = false;
+                        return;
+                    }
+
                     // Add a slight delay for each block to create a staggered effect
                     setTimeout(() => {
                         row.appendChild(newBlock);
@@ -549,6 +551,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             newBlock.classList.remove('glow');
                         }, 300); // Glow duration
                     }, 600); // 250ms delay between each row's new block addition
+
+
                 });
 
                 // Increment the depth counter for each block added
@@ -560,10 +564,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 mineGrid.classList.remove('shift-left');
                 
     
+                if (!slidable) return;
+
+                setTimeout(() => {
+                    shiftGridLeftAndGenerateNewRightColumn();                    
+                }, 1000);
+                
             }, 350); // Duration of the shift-left animation
+    
     
         }, 600); // Duration of the shaking effect
     }
+
     
     createMineGrid();
 });
