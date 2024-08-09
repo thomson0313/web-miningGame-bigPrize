@@ -194,11 +194,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 const row = Array.from(mineGrid.children);
                 for (let r = 0; r < row.length; r++) {
                     const col = Array.from(row[r].children);
-                    for (let c = 0; c < col.length - 1; c++) {
-                        const dataType = col[c].getAttribute('data-type');
-
-                        if(dataType !== 'sand' && dataType !== 'bedrock' && dataType !== 'empty') {
-                            generatable = 0;
+                    if(depth === 0) {
+                        for (let c = 0; c < col.length - 1; c++) {
+                            const dataType = col[c].getAttribute('data-type');
+                            if(dataType !== 'sand' && dataType !== 'bedrock' && dataType !== 'empty') {
+                                generatable = 0;
+                            }
+                        }
+                    } else {
+                        for (let c = 1; c < col.length; c++) {
+                            const dataType = col[c].getAttribute('data-type');
+                            if(dataType !== 'sand' && dataType !== 'bedrock' && dataType !== 'empty') {
+                                generatable = 0;
+                            }
                         }
                     }
                 }
@@ -518,10 +526,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Slowly add the new right column with a glow effect
                 mineGrid.querySelectorAll('.mine-row').forEach((row, rowIndex) => {
                     const newBlock = document.createElement('div');
-                    newBlock.classList.add('mine-block');
-                    if(newBlock.getAttribute('data-type') !== 'empty') {
-                        newBlock.classList.add('glow');
-                    }
+                    newBlock.classList.add('mine-block', 'glow');
+                    console.log(newBlock)
                     newBlock.setAttribute('data-row', rowIndex);
                     newBlock.setAttribute('data-col', depth+6);
                     newBlock.addEventListener('dragover', (e) => e.preventDefault());
@@ -531,6 +537,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     assignLastRowBlockType(newBlock); 
 
                     const lastBlock = row.lastChild;
+                    console.log(lastBlock)
                     lastBlock.classList.remove(lastBlock.getAttribute('data-type'));
                     assignBlockType(lastBlock);
 
