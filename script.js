@@ -138,10 +138,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function assignLastRowBlockType(block) {
         const rand = Math.random();
-        if (rand < 0.145) {  // 14.5% chance for empty (void) block
+        if (rand < 0.1) {  // 10% chance for empty (void) block
             block.classList.add('sand');
             block.setAttribute('data-type', 'sand');
-        } else {  // 85.5% chance for Bedrock
+        } else if(rand < 0.15) {  // 5% chance for empty
+            block.classList.add('empty');
+            block.setAttribute('data-type', 'empty');
+        } else {  // 85% chance for Bedrock
             block.classList.add('bedrock');
             block.setAttribute('data-type', 'bedrock');
         }
@@ -185,8 +188,44 @@ document.addEventListener('DOMContentLoaded', function() {
         const rowIndex = parseInt(block.getAttribute('data-row'), 10);
     
         // Instrumens is restricted to bedrock and Restrict TNT placement to empty blocks and last row 
-        if (((blockType !== 'empty' || colIndex === rightmostColumnIndex ) && (selectedTool === 'miniTnt' || selectedTool === 'bigTnt'))) return;
+        // if (((blockType !== 'empty') && (selectedTool === 'miniTnt' || selectedTool === 'bigTnt'))) return;
     
+        if(selectedTool === 'miniTnt' || selectedTool === 'bigTnt') {
+            if(blockType !== 'empty') {
+                alert('A Dynamite or a bomb can be placed at void area...')
+            }
+
+            if (colIndex === rightmostColumnIndex) {
+                let generatable = 1;
+                const row = Array.from(mineGrid.children);
+                for (let r = 0; r < row.length; r++) {
+                    const col = Array.from(row[r].children);
+                    if(depth === 0) {
+                        for (let c = 0; c < col.length - 1; c++) {
+                            const dataType = col[c].getAttribute('data-type');
+                            if(dataType !== 'sand' && dataType !== 'bedrock' && dataType !== 'empty') {
+                                generatable = 0;
+                            }
+                        }
+                    } else {
+                        for (let c = 1; c < col.length; c++) {
+                            const dataType = col[c].getAttribute('data-type');
+                            if(dataType !== 'sand' && dataType !== 'bedrock' && dataType !== 'empty') {
+                                generatable = 0;
+                            }
+                        }
+                    }
+                }
+                if(generatable === 0) {
+                    alert('There are still metals to dig...')
+                    return;
+                }
+                setTimeout(() => {
+                    shiftGridLeftAndGenerateNewRightColumn();
+                }, 3000)
+            }
+        }
+
         if (selectedTool === 'pickaxe' && pickaxeCount > 0) {
             // handle drop on last row
             if (colIndex === rightmostColumnIndex) {
