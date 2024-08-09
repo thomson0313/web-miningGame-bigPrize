@@ -524,10 +524,10 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
 
                 // Slowly add the new right column with a glow effect
-                mineGrid.querySelectorAll('.mine-row').forEach((row, rowIndex) => {
+                mineGrid.querySelectorAll('.mine-row').forEach( async (row, rowIndex) => {
+                    // const newBlock = null;
                     const newBlock = document.createElement('div');
                     newBlock.classList.add('mine-block', 'glow');
-                    console.log(newBlock)
                     newBlock.setAttribute('data-row', rowIndex);
                     newBlock.setAttribute('data-col', depth+6);
                     newBlock.addEventListener('dragover', (e) => e.preventDefault());
@@ -537,7 +537,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     assignLastRowBlockType(newBlock); 
 
                     const lastBlock = row.lastChild;
-                    console.log(lastBlock)
                     lastBlock.classList.remove(lastBlock.getAttribute('data-type'));
                     assignBlockType(lastBlock);
 
@@ -545,12 +544,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     if(lastBlockType !== 'bedrock' && lastBlockType !== 'empty' && lastBlockType !== 'sand') {
                         slidable = false;
-                        return;
                     }
 
                     // Add a slight delay for each block to create a staggered effect
-                    setTimeout(() => {
-                        row.appendChild(newBlock);
+                    setTimeout( () => {
+                       row.appendChild(newBlock);
                         
                         
                         // Remove the glow effect after some time
