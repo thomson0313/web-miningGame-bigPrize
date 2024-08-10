@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     destroy3x3WithCollision(block);
                 }
             }, 1000); // Duration of explosion GIF
-        }, 2000); // Delay before TNT explodes
+        }, 1500); // Delay before TNT explodes
     }
 
     function highlightExplosionArea(block) {
@@ -431,6 +431,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     function destroyBlock(block) {
         const blockType = block.getAttribute('data-type');
+        console.log(blockType)
         createParticles(block); // Create particles when block is destroyed
         playOreAnimation(block, blockType);
         
@@ -440,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
             block.classList.add('empty');
             block.setAttribute('data-type', 'empty'); // Set the block type to 'empty'
             block.style.visibility = 'visible'; // Ensure the block is visible as an empty block
-        }, 500); // Match this duration with the ore animation duration
+        }, 300); // Match this duration with the ore animation duration
     }
     
     
